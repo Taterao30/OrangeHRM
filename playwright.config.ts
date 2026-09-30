@@ -4,10 +4,13 @@ import path from 'path';
 
 const ENV = (process.env.ENV || 'qa').toLowerCase();
 
-// Local execution only
+// Load local .env files only when running locally
 if (!process.env.CI) {
   dotenv.config({
-    path: path.resolve(process.cwd(), `config/.env.${ENV}`),
+    path: path.resolve(
+      process.cwd(),
+      `config/.env.${ENV}`
+    ),
     override: true
   });
 }
@@ -36,7 +39,9 @@ export default defineConfig({
     baseURL: process.env.ORANGE_BASE_URL,
 
     trace: 'on-first-retry',
+
     screenshot: 'only-on-failure',
+
     video: 'retain-on-failure'
   },
 
