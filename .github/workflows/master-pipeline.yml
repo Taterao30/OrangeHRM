@@ -14,53 +14,53 @@ on:
           - Stage
           - Prod
 
+
 jobs:
 
-  # ==========================================================
-  # STEP 1: PREPARE
+  # =========================================================
+  # STEP 1 - PREPARE PIPELINE
   # Always runs
-  # ==========================================================
+  # =========================================================
   prepare:
     name: Prepare Pipeline
     runs-on: ubuntu-latest
 
     steps:
-      - name: Show selected environment
+      - name: Show pipeline information
         run: |
-          echo "========================================="
-          echo " OrangeHRM MASTER PIPELINE"
-          echo " Selected Environment: ${{ github.event.inputs.environment }}"
-          echo "========================================="
+          echo "=========================================="
+          echo "       ORANGEHRM MASTER PIPELINE"
+          echo "=========================================="
+          echo "Selected Environment: ${{ github.event.inputs.environment }}"
+          echo "=========================================="
 
 
-  # ==========================================================
-  # STEP 2: DEPLOY DEV
+  # =========================================================
+  # STEP 2 - DEPLOY TO DEV
   # Always runs
-  # ==========================================================
+  # =========================================================
   deploy-dev:
     name: Deploy to DEV
     needs: prepare
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy DEV
+      - name: Deploy application to DEV
         run: |
-          echo "========================================="
-          echo " Deploying OrangeHRM to DEV"
-          echo "========================================="
-          echo "DEV deployment completed"
+          echo "=========================================="
+          echo "       DEPLOYING TO DEV"
+          echo "=========================================="
+          echo "OrangeHRM deployed to DEV successfully"
 
 
-  # ==========================================================
-  # STEP 3: DEV SANITY TESTS
+  # =========================================================
+  # STEP 3 - DEV SANITY TESTS
   # Always runs
-  # ==========================================================
+  # =========================================================
   sanity-dev:
     name: DEV - Sanity Tests
     needs: deploy-dev
     runs-on: ubuntu-latest
-
-    environment: Dev
 
     env:
       ENV: dev
@@ -88,33 +88,33 @@ jobs:
       - name: Show DEV configuration
         run: |
           echo "Environment: $ENV"
-          echo "Suite: sanity"
+          echo "Test Suite: SANITY"
 
       - name: Validate DEV secrets
         shell: bash
         run: |
           if [ -z "$ORANGE_BASE_URL" ]; then
-            echo "ERROR: ORANGE_BASE_URL is missing"
+            echo "ERROR: ORANGE_BASE_URL secret is missing"
             exit 1
           fi
 
           if [ -z "$ORANGE_USERNAME" ]; then
-            echo "ERROR: ORANGE_USERNAME is missing"
+            echo "ERROR: ORANGE_USERNAME secret is missing"
             exit 1
           fi
 
           if [ -z "$ORANGE_PASSWORD" ]; then
-            echo "ERROR: ORANGE_PASSWORD is missing"
+            echo "ERROR: ORANGE_PASSWORD secret is missing"
             exit 1
           fi
 
-          echo "DEV secrets are available"
+          echo "All required DEV secrets are available"
 
       - name: Run DEV Sanity Tests
         run: |
-          echo "========================================="
-          echo " Running SANITY tests on DEV"
-          echo "========================================="
+          echo "=========================================="
+          echo "       RUNNING DEV SANITY TESTS"
+          echo "=========================================="
 
           npx playwright test \
             --project=chromium \
@@ -129,11 +129,19 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
+      - name: Upload DEV Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dev-sanity-test-results
+          path: test-results/
+          retention-days: 7
 
-  # ==========================================================
-  # STEP 4: DEPLOY QA
-  # Runs when QA, Stage or Prod selected
-  # ==========================================================
+
+  # =========================================================
+  # STEP 4 - DEPLOY TO QA
+  # Runs for QA, Stage and Prod
+  # =========================================================
   deploy-qa:
     name: Deploy to QA
     needs: sanity-dev
@@ -146,18 +154,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy QA
+      - name: Deploy application to QA
         run: |
-          echo "========================================="
-          echo " Deploying OrangeHRM to QA"
-          echo "========================================="
-          echo "QA deployment completed"
+          echo "=========================================="
+          echo "       DEPLOYING TO QA"
+          echo "=========================================="
+          echo "OrangeHRM deployed to QA successfully"
 
 
-  # ==========================================================
-  # STEP 5: QA REGRESSION TESTS
-  # Runs when QA, Stage or Prod selected
-  # ==========================================================
+  # =========================================================
+  # STEP 5 - QA REGRESSION TESTS
+  # Runs for QA, Stage and Prod
+  # =========================================================
   regression-qa:
     name: QA - Regression Tests
     needs: deploy-qa
@@ -168,8 +176,6 @@ jobs:
         )
 
     runs-on: ubuntu-latest
-
-    environment: QA
 
     env:
       ENV: qa
@@ -197,33 +203,33 @@ jobs:
       - name: Show QA configuration
         run: |
           echo "Environment: $ENV"
-          echo "Suite: regression"
+          echo "Test Suite: REGRESSION"
 
       - name: Validate QA secrets
         shell: bash
         run: |
           if [ -z "$ORANGE_BASE_URL" ]; then
-            echo "ERROR: ORANGE_BASE_URL is missing"
+            echo "ERROR: ORANGE_BASE_URL secret is missing"
             exit 1
           fi
 
           if [ -z "$ORANGE_USERNAME" ]; then
-            echo "ERROR: ORANGE_USERNAME is missing"
+            echo "ERROR: ORANGE_USERNAME secret is missing"
             exit 1
           fi
 
           if [ -z "$ORANGE_PASSWORD" ]; then
-            echo "ERROR: ORANGE_PASSWORD is missing"
+            echo "ERROR: ORANGE_PASSWORD secret is missing"
             exit 1
           fi
 
-          echo "QA secrets are available"
+          echo "All required QA secrets are available"
 
       - name: Run QA Regression Tests
         run: |
-          echo "========================================="
-          echo " Running REGRESSION tests on QA"
-          echo "========================================="
+          echo "=========================================="
+          echo "       RUNNING QA REGRESSION TESTS"
+          echo "=========================================="
 
           npx playwright test \
             --project=chromium \
@@ -238,11 +244,19 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
+      - name: Upload QA Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-regression-test-results
+          path: test-results/
+          retention-days: 7
 
-  # ==========================================================
-  # STEP 6: DEPLOY STAGE
-  # Runs when Stage or Prod selected
-  # ==========================================================
+
+  # =========================================================
+  # STEP 6 - DEPLOY TO STAGE
+  # Runs for Stage and Prod
+  # =========================================================
   deploy-stage:
     name: Deploy to STAGE
     needs: regression-qa
@@ -255,18 +269,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy STAGE
+      - name: Deploy application to STAGE
         run: |
-          echo "========================================="
-          echo " Deploying OrangeHRM to STAGE"
-          echo "========================================="
-          echo "STAGE deployment completed"
+          echo "=========================================="
+          echo "       DEPLOYING TO STAGE"
+          echo "=========================================="
+          echo "OrangeHRM deployed to STAGE successfully"
 
 
-  # ==========================================================
-  # STEP 7: STAGE SANITY TESTS
-  # Runs when Stage or Prod selected
-  # ==========================================================
+  # =========================================================
+  # STEP 7 - STAGE SANITY TESTS
+  # Runs for Stage and Prod
+  # =========================================================
   sanity-stage:
     name: STAGE - Sanity Tests
     needs: deploy-stage
@@ -277,8 +291,6 @@ jobs:
         )
 
     runs-on: ubuntu-latest
-
-    environment: Stage
 
     env:
       ENV: stage
@@ -306,33 +318,33 @@ jobs:
       - name: Show STAGE configuration
         run: |
           echo "Environment: $ENV"
-          echo "Suite: sanity"
+          echo "Test Suite: SANITY"
 
       - name: Validate STAGE secrets
         shell: bash
         run: |
           if [ -z "$ORANGE_BASE_URL" ]; then
-            echo "ERROR: ORANGE_BASE_URL is missing"
+            echo "ERROR: ORANGE_BASE_URL secret is missing"
             exit 1
           fi
 
           if [ -z "$ORANGE_USERNAME" ]; then
-            echo "ERROR: ORANGE_USERNAME is missing"
+            echo "ERROR: ORANGE_USERNAME secret is missing"
             exit 1
           fi
 
           if [ -z "$ORANGE_PASSWORD" ]; then
-            echo "ERROR: ORANGE_PASSWORD is missing"
+            echo "ERROR: ORANGE_PASSWORD secret is missing"
             exit 1
           fi
 
-          echo "STAGE secrets are available"
+          echo "All required STAGE secrets are available"
 
       - name: Run STAGE Sanity Tests
         run: |
-          echo "========================================="
-          echo " Running SANITY tests on STAGE"
-          echo "========================================="
+          echo "=========================================="
+          echo "       RUNNING STAGE SANITY TESTS"
+          echo "=========================================="
 
           npx playwright test \
             --project=chromium \
@@ -347,11 +359,19 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
+      - name: Upload STAGE Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage-sanity-test-results
+          path: test-results/
+          retention-days: 7
 
-  # ==========================================================
-  # STEP 8: DEPLOY PROD
-  # Runs only when Prod selected
-  # ==========================================================
+
+  # =========================================================
+  # STEP 8 - DEPLOY TO PROD
+  # Runs only for Prod
+  # =========================================================
   deploy-prod:
     name: Deploy to PROD
     needs: sanity-stage
@@ -361,18 +381,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy PROD
+      - name: Deploy application to PROD
         run: |
-          echo "========================================="
-          echo " Deploying OrangeHRM to PROD"
-          echo "========================================="
-          echo "PROD deployment completed"
+          echo "=========================================="
+          echo "       DEPLOYING TO PROD"
+          echo "=========================================="
+          echo "OrangeHRM deployed to PROD successfully"
 
 
-  # ==========================================================
-  # STEP 9: PROD SMOKE TESTS
-  # Runs only when Prod selected
-  # ==========================================================
+  # =========================================================
+  # STEP 9 - PROD SMOKE TESTS
+  # Runs only for Prod
+  # =========================================================
   smoke-prod:
     name: PROD - Smoke Tests
     needs: deploy-prod
@@ -380,8 +400,6 @@ jobs:
     if: github.event.inputs.environment == 'Prod'
 
     runs-on: ubuntu-latest
-
-    environment: Prod
 
     env:
       ENV: prod
@@ -409,33 +427,33 @@ jobs:
       - name: Show PROD configuration
         run: |
           echo "Environment: $ENV"
-          echo "Suite: smoke"
+          echo "Test Suite: SMOKE"
 
       - name: Validate PROD secrets
         shell: bash
         run: |
           if [ -z "$ORANGE_BASE_URL" ]; then
-            echo "ERROR: ORANGE_BASE_URL is missing"
+            echo "ERROR: ORANGE_BASE_URL secret is missing"
             exit 1
           fi
 
           if [ -z "$ORANGE_USERNAME" ]; then
-            echo "ERROR: ORANGE_USERNAME is missing"
+            echo "ERROR: ORANGE_USERNAME secret is missing"
             exit 1
           fi
 
           if [ -z "$ORANGE_PASSWORD" ]; then
-            echo "ERROR: ORANGE_PASSWORD is missing"
+            echo "ERROR: ORANGE_PASSWORD secret is missing"
             exit 1
           fi
 
-          echo "PROD secrets are available"
+          echo "All required PROD secrets are available"
 
       - name: Run PROD Smoke Tests
         run: |
-          echo "========================================="
-          echo " Running SMOKE tests on PROD"
-          echo "========================================="
+          echo "=========================================="
+          echo "       RUNNING PROD SMOKE TESTS"
+          echo "=========================================="
 
           npx playwright test \
             --project=chromium \
@@ -450,11 +468,19 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
+      - name: Upload PROD Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prod-smoke-test-results
+          path: test-results/
+          retention-days: 7
 
-  # ==========================================================
-  # STEP 10: PIPELINE SUMMARY
+
+  # =========================================================
+  # STEP 10 - PIPELINE SUMMARY
   # Always runs
-  # ==========================================================
+  # =========================================================
   summary:
     name: Pipeline Summary
 
@@ -474,15 +500,28 @@ jobs:
       - name: Pipeline Results
         run: |
           echo "=============================================="
-          echo "      ORANGEHRM MASTER PIPELINE SUMMARY"
+          echo "       ORANGEHRM PIPELINE SUMMARY"
           echo "=============================================="
-          echo "Selected environment: ${{ github.event.inputs.environment }}"
+
+          echo "Selected Environment:"
+          echo "${{ github.event.inputs.environment }}"
+
           echo "----------------------------------------------"
-          echo "Prepare:       ${{ needs.prepare.result }}"
-          echo "DEV Sanity:    ${{ needs.sanity-dev.result }}"
-          echo "QA Regression: ${{ needs.regression-qa.result }}"
-          echo "STAGE Sanity:  ${{ needs.sanity-stage.result }}"
-          echo "PROD Smoke:    ${{ needs.smoke-prod.result }}"
+
+          echo "Prepare Pipeline:"
+          echo "${{ needs.prepare.result }}"
+
+          echo "DEV Sanity:"
+          echo "${{ needs.sanity-dev.result }}"
+
+          echo "QA Regression:"
+          echo "${{ needs.regression-qa.result }}"
+
+          echo "STAGE Sanity:"
+          echo "${{ needs.sanity-stage.result }}"
+
+          echo "PROD Smoke:"
+          echo "${{ needs.smoke-prod.result }}"
+
           echo "=============================================="
-          echo ""
-          echo "skipped = environment was not included"
+          echo "skipped = environment not included in this run"
