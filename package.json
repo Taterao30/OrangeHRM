@@ -1,0 +1,21 @@
+{
+  "name": "orangehrm-playwright-ui-automation",
+  "version": "1.0.0",
+  "description": "Simple OrangeHRM UI automation framework for Playwright, GitHub Actions and Jenkins practice",
+  "scripts": {
+    "test": "playwright test",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:sanity": "playwright test --grep @sanity",
+    "test:regression": "playwright test --grep @regression",
+    "test:chromium": "playwright test --project=chromium",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.4"
+  }
+}
