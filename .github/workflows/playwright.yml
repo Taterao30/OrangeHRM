@@ -8,10 +8,39 @@ on:
     branches: [ main ]
 
   workflow_dispatch:
+    inputs:
+      environment:
+        description: Select environment
+        required: true
+        default: QA
+        type: choice
+        options:
+          - Dev
+          - QA
+          - Stage
+          - Prod
+
+      suite:
+        description: Select test suite
+        required: true
+        default: smoke
+        type: choice
+        options:
+          - smoke
+          - sanity
+          - regression
+          - all
 
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    environment: ${{ github.event.inputs.environment || 'QA' }}
+
+    env:
+      ORANGE_BASE_URL: ${{ secrets.ORANGE_BASE_URL }}
+      ORANGE_USERNAME: ${{ secrets.ORANGE_USERNAME }}
+      ORANGE_PASSWORD: ${{ secrets.ORANGE_PASSWORD }}
 
     steps:
       - name: Checkout repository
@@ -29,18 +58,28 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run smoke tests
-        run: npm run test:smoke
-        env:
-          BASE_URL: ${{ secrets.BASE_URL }}
-          ORANGE_USERNAME: ${{ secrets.ORANGE_USERNAME }}
-          ORANGE_PASSWORD: ${{ secrets.ORANGE_PASSWORD }}
-          ENV: qa
+      - name: Run selected Playwright suite
+        shell: bash
+        run: |
+          SUITE="${{ github.event.inputs.suite || 'smoke' }}"
+
+          if [ "$SUITE" = "smoke" ]; then
+            npx playwright test --grep "@smoke" --workers=1
+
+          elif [ "$SUITE" = "sanity" ]; then
+            npx playwright test --grep "@sanity" --workers=1
+
+          elif [ "$SUITE" = "regression" ]; then
+            npx playwright test --grep "@regression" --workers=1
+
+          else
+            npx playwright test --workers=1
+          fi
 
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ github.event.inputs.environment || 'QA' }}-${{ github.event.inputs.suite || 'smoke' }}
           path: playwright-report/
           retention-days: 7
