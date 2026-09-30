@@ -37,7 +37,7 @@ export default defineConfig({
   ],
 
   use: {
-    baseURL: process.env.ORANGE_BASE_URL,
+    baseURL: process.env.BASE_URL,
 
     trace: 'on-first-retry',
 
