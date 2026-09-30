@@ -2,10 +2,10 @@ name: OrangeHRM Playwright Tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
 
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
 
   workflow_dispatch:
     inputs:
@@ -33,16 +33,24 @@ on:
 
 jobs:
   test:
+
     runs-on: ubuntu-latest
 
+    # Uses the selected GitHub Environment.
+    # For push/PR, QA is used by default.
     environment: ${{ github.event.inputs.environment || 'QA' }}
 
     env:
+      # Pass selected environment to Playwright.
+      ENV: ${{ github.event.inputs.environment || 'QA' }}
+
+      # Read values from GitHub Environment Secrets.
       ORANGE_BASE_URL: ${{ secrets.ORANGE_BASE_URL }}
       ORANGE_USERNAME: ${{ secrets.ORANGE_USERNAME }}
       ORANGE_PASSWORD: ${{ secrets.ORANGE_PASSWORD }}
 
     steps:
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -58,22 +66,58 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
+      # Show selected environment and suite.
+      # Do NOT print username/password.
+      - name: Show selected configuration
+        shell: bash
+        run: |
+          echo "Selected Environment: $ENV"
+          echo "Selected Suite: ${{ github.event.inputs.suite || 'smoke' }}"
+
+      # Fail early if GitHub Environment Secrets are missing.
+      - name: Validate environment secrets
+        shell: bash
+        run: |
+          if [ -z "$ORANGE_BASE_URL" ]; then
+            echo "ERROR: ORANGE_BASE_URL secret is missing."
+            exit 1
+          fi
+
+          if [ -z "$ORANGE_USERNAME" ]; then
+            echo "ERROR: ORANGE_USERNAME secret is missing."
+            exit 1
+          fi
+
+          if [ -z "$ORANGE_PASSWORD" ]; then
+            echo "ERROR: ORANGE_PASSWORD secret is missing."
+            exit 1
+          fi
+
+          echo "Required environment secrets are available."
+
       - name: Run selected Playwright suite
         shell: bash
         run: |
           SUITE="${{ github.event.inputs.suite || 'smoke' }}"
 
+          echo "Running $SUITE tests on $ENV environment"
+
           if [ "$SUITE" = "smoke" ]; then
+
             npx playwright test --grep "@smoke" --workers=1
 
           elif [ "$SUITE" = "sanity" ]; then
+
             npx playwright test --grep "@sanity" --workers=1
 
           elif [ "$SUITE" = "regression" ]; then
+
             npx playwright test --grep "@regression" --workers=1
 
           else
+
             npx playwright test --workers=1
+
           fi
 
       - name: Upload Playwright report

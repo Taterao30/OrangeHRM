@@ -2,34 +2,30 @@ import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 import path from 'path';
 
-const ENV = (process.env.ENV || 'qa').trim();
+const ENV = (process.env.ENV || 'qa').toLowerCase();
 
-const envFile = path.resolve(
-  process.cwd(),
-  `config/.env.${ENV}`
-);
+// Local execution only
+if (!process.env.CI) {
+  dotenv.config({
+    path: path.resolve(process.cwd(), `config/.env.${ENV}`),
+    override: true
+  });
+}
 
-const result = dotenv.config({
-  path: envFile,
-  override: true
-});
-
-console.log('Environment:', ENV);
-console.log('Env File:', envFile);
-console.log('Loaded values:', result.parsed);
-console.log('Base URL:', process.env.ORANGE_BASE_URL);
+console.log(`Running tests on environment: ${ENV}`);
+console.log(`Base URL: ${process.env.ORANGE_BASE_URL}`);
 
 export default defineConfig({
 
   testDir: './tests',
 
-  fullyParallel: true,
+  fullyParallel: false,
 
   forbidOnly: !!process.env.CI,
 
   retries: process.env.CI ? 1 : 0,
 
-  workers: process.env.CI ? 1 : undefined,
+  workers: 1,
 
   reporter: [
     ['html', { open: 'never' }],
@@ -37,12 +33,10 @@ export default defineConfig({
   ],
 
   use: {
-    baseURL: process.env.BASE_URL,
+    baseURL: process.env.ORANGE_BASE_URL,
 
     trace: 'on-first-retry',
-
     screenshot: 'only-on-failure',
-
     video: 'retain-on-failure'
   },
 
