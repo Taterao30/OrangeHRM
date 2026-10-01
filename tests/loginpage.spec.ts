@@ -1,7 +1,5 @@
 import { test, expect } from '../src/fixtures/pagefixtures';
 
-test.describe.configure({ mode: 'serial' });
-
 test.beforeEach(async ({ loginPage }) => {
   await loginPage.goToLoginPage();
 });
@@ -36,7 +34,7 @@ test(
     );
 
     await expect(page).toHaveURL(/dashboard\/index/, {
-      timeout: 10000
+      timeout: 15000
     });
   }
 );
@@ -48,7 +46,9 @@ test('@regression login should fail with invalid password', async ({ loginPage }
     'wrong123'
   );
 
-  await expect(loginPage.invalidCredentialsMessage).toBeVisible();
+  await expect(loginPage.invalidCredentialsMessage).toBeVisible({
+    timeout: 10000
+  });
 });
 
 test('@regression login should fail with invalid username', async ({ loginPage }) => {
@@ -58,7 +58,9 @@ test('@regression login should fail with invalid username', async ({ loginPage }
     process.env.ORANGE_PASSWORD!
   );
 
-  await expect(loginPage.invalidCredentialsMessage).toBeVisible();
+  await expect(loginPage.invalidCredentialsMessage).toBeVisible({
+    timeout: 10000
+  });
 });
 
 test('@regression Required message should display for blank username', async ({ loginPage }) => {
@@ -68,7 +70,9 @@ test('@regression Required message should display for blank username', async ({ 
     process.env.ORANGE_PASSWORD!
   );
 
-  await expect(loginPage.requiredMessage.first()).toBeVisible();
+  await expect(loginPage.requiredMessage.first()).toBeVisible({
+    timeout: 10000
+  });
 });
 
 test('@regression Required message should display for blank password', async ({ loginPage }) => {
@@ -78,5 +82,7 @@ test('@regression Required message should display for blank password', async ({ 
     ''
   );
 
-  await expect(loginPage.requiredMessage.first()).toBeVisible();
+  await expect(loginPage.requiredMessage.first()).toBeVisible({
+    timeout: 10000
+  });
 });
