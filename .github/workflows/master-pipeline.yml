@@ -14,13 +14,8 @@ on:
           - Stage
           - Prod
 
-
 jobs:
 
-  # =========================================================
-  # STEP 1 - PREPARE PIPELINE
-  # Always runs
-  # =========================================================
   prepare:
     name: Prepare Pipeline
     runs-on: ubuntu-latest
@@ -35,10 +30,6 @@ jobs:
           echo "=========================================="
 
 
-  # =========================================================
-  # STEP 2 - DEPLOY TO DEV
-  # Always runs
-  # =========================================================
   deploy-dev:
     name: Deploy to DEV
     needs: prepare
@@ -47,16 +38,10 @@ jobs:
     steps:
       - name: Deploy application to DEV
         run: |
-          echo "=========================================="
-          echo "       DEPLOYING TO DEV"
-          echo "=========================================="
-          echo "OrangeHRM deployed to DEV successfully"
+          echo "Deploying OrangeHRM to DEV"
+          echo "DEV deployment completed"
 
 
-  # =========================================================
-  # STEP 3 - DEV SANITY TESTS
-  # Always runs
-  # =========================================================
   sanity-dev:
     name: DEV - Sanity Tests
     needs: deploy-dev
@@ -69,7 +54,6 @@ jobs:
       ORANGE_PASSWORD: ${{ secrets.ORANGE_PASSWORD }}
 
     steps:
-
       - name: Checkout OrangeHRM repository
         uses: actions/checkout@v4
 
@@ -85,37 +69,28 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Show DEV configuration
-        run: |
-          echo "Environment: $ENV"
-          echo "Test Suite: SANITY"
-
       - name: Validate DEV secrets
         shell: bash
         run: |
           if [ -z "$ORANGE_BASE_URL" ]; then
-            echo "ERROR: ORANGE_BASE_URL secret is missing"
+            echo "ERROR: ORANGE_BASE_URL is missing"
             exit 1
           fi
 
           if [ -z "$ORANGE_USERNAME" ]; then
-            echo "ERROR: ORANGE_USERNAME secret is missing"
+            echo "ERROR: ORANGE_USERNAME is missing"
             exit 1
           fi
 
           if [ -z "$ORANGE_PASSWORD" ]; then
-            echo "ERROR: ORANGE_PASSWORD secret is missing"
+            echo "ERROR: ORANGE_PASSWORD is missing"
             exit 1
           fi
 
-          echo "All required DEV secrets are available"
+          echo "DEV secrets are available"
 
       - name: Run DEV Sanity Tests
         run: |
-          echo "=========================================="
-          echo "       RUNNING DEV SANITY TESTS"
-          echo "=========================================="
-
           npx playwright test \
             --project=chromium \
             --grep "@sanity" \
@@ -129,19 +104,7 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
-      - name: Upload DEV Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dev-sanity-test-results
-          path: test-results/
-          retention-days: 7
 
-
-  # =========================================================
-  # STEP 4 - DEPLOY TO QA
-  # Runs for QA, Stage and Prod
-  # =========================================================
   deploy-qa:
     name: Deploy to QA
     needs: sanity-dev
@@ -155,17 +118,9 @@ jobs:
 
     steps:
       - name: Deploy application to QA
-        run: |
-          echo "=========================================="
-          echo "       DEPLOYING TO QA"
-          echo "=========================================="
-          echo "OrangeHRM deployed to QA successfully"
+        run: echo "QA deployment completed"
 
 
-  # =========================================================
-  # STEP 5 - QA REGRESSION TESTS
-  # Runs for QA, Stage and Prod
-  # =========================================================
   regression-qa:
     name: QA - Regression Tests
     needs: deploy-qa
@@ -184,7 +139,6 @@ jobs:
       ORANGE_PASSWORD: ${{ secrets.ORANGE_PASSWORD }}
 
     steps:
-
       - name: Checkout OrangeHRM repository
         uses: actions/checkout@v4
 
@@ -200,37 +154,8 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Show QA configuration
-        run: |
-          echo "Environment: $ENV"
-          echo "Test Suite: REGRESSION"
-
-      - name: Validate QA secrets
-        shell: bash
-        run: |
-          if [ -z "$ORANGE_BASE_URL" ]; then
-            echo "ERROR: ORANGE_BASE_URL secret is missing"
-            exit 1
-          fi
-
-          if [ -z "$ORANGE_USERNAME" ]; then
-            echo "ERROR: ORANGE_USERNAME secret is missing"
-            exit 1
-          fi
-
-          if [ -z "$ORANGE_PASSWORD" ]; then
-            echo "ERROR: ORANGE_PASSWORD secret is missing"
-            exit 1
-          fi
-
-          echo "All required QA secrets are available"
-
       - name: Run QA Regression Tests
         run: |
-          echo "=========================================="
-          echo "       RUNNING QA REGRESSION TESTS"
-          echo "=========================================="
-
           npx playwright test \
             --project=chromium \
             --grep "@regression" \
@@ -244,19 +169,7 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
-      - name: Upload QA Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: qa-regression-test-results
-          path: test-results/
-          retention-days: 7
 
-
-  # =========================================================
-  # STEP 6 - DEPLOY TO STAGE
-  # Runs for Stage and Prod
-  # =========================================================
   deploy-stage:
     name: Deploy to STAGE
     needs: regression-qa
@@ -270,17 +183,9 @@ jobs:
 
     steps:
       - name: Deploy application to STAGE
-        run: |
-          echo "=========================================="
-          echo "       DEPLOYING TO STAGE"
-          echo "=========================================="
-          echo "OrangeHRM deployed to STAGE successfully"
+        run: echo "STAGE deployment completed"
 
 
-  # =========================================================
-  # STEP 7 - STAGE SANITY TESTS
-  # Runs for Stage and Prod
-  # =========================================================
   sanity-stage:
     name: STAGE - Sanity Tests
     needs: deploy-stage
@@ -299,7 +204,6 @@ jobs:
       ORANGE_PASSWORD: ${{ secrets.ORANGE_PASSWORD }}
 
     steps:
-
       - name: Checkout OrangeHRM repository
         uses: actions/checkout@v4
 
@@ -315,37 +219,8 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Show STAGE configuration
-        run: |
-          echo "Environment: $ENV"
-          echo "Test Suite: SANITY"
-
-      - name: Validate STAGE secrets
-        shell: bash
-        run: |
-          if [ -z "$ORANGE_BASE_URL" ]; then
-            echo "ERROR: ORANGE_BASE_URL secret is missing"
-            exit 1
-          fi
-
-          if [ -z "$ORANGE_USERNAME" ]; then
-            echo "ERROR: ORANGE_USERNAME secret is missing"
-            exit 1
-          fi
-
-          if [ -z "$ORANGE_PASSWORD" ]; then
-            echo "ERROR: ORANGE_PASSWORD secret is missing"
-            exit 1
-          fi
-
-          echo "All required STAGE secrets are available"
-
       - name: Run STAGE Sanity Tests
         run: |
-          echo "=========================================="
-          echo "       RUNNING STAGE SANITY TESTS"
-          echo "=========================================="
-
           npx playwright test \
             --project=chromium \
             --grep "@sanity" \
@@ -359,19 +234,7 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
-      - name: Upload STAGE Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: stage-sanity-test-results
-          path: test-results/
-          retention-days: 7
 
-
-  # =========================================================
-  # STEP 8 - DEPLOY TO PROD
-  # Runs only for Prod
-  # =========================================================
   deploy-prod:
     name: Deploy to PROD
     needs: sanity-stage
@@ -382,17 +245,9 @@ jobs:
 
     steps:
       - name: Deploy application to PROD
-        run: |
-          echo "=========================================="
-          echo "       DEPLOYING TO PROD"
-          echo "=========================================="
-          echo "OrangeHRM deployed to PROD successfully"
+        run: echo "PROD deployment completed"
 
 
-  # =========================================================
-  # STEP 9 - PROD SMOKE TESTS
-  # Runs only for Prod
-  # =========================================================
   smoke-prod:
     name: PROD - Smoke Tests
     needs: deploy-prod
@@ -408,7 +263,6 @@ jobs:
       ORANGE_PASSWORD: ${{ secrets.ORANGE_PASSWORD }}
 
     steps:
-
       - name: Checkout OrangeHRM repository
         uses: actions/checkout@v4
 
@@ -424,37 +278,8 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Show PROD configuration
-        run: |
-          echo "Environment: $ENV"
-          echo "Test Suite: SMOKE"
-
-      - name: Validate PROD secrets
-        shell: bash
-        run: |
-          if [ -z "$ORANGE_BASE_URL" ]; then
-            echo "ERROR: ORANGE_BASE_URL secret is missing"
-            exit 1
-          fi
-
-          if [ -z "$ORANGE_USERNAME" ]; then
-            echo "ERROR: ORANGE_USERNAME secret is missing"
-            exit 1
-          fi
-
-          if [ -z "$ORANGE_PASSWORD" ]; then
-            echo "ERROR: ORANGE_PASSWORD secret is missing"
-            exit 1
-          fi
-
-          echo "All required PROD secrets are available"
-
       - name: Run PROD Smoke Tests
         run: |
-          echo "=========================================="
-          echo "       RUNNING PROD SMOKE TESTS"
-          echo "=========================================="
-
           npx playwright test \
             --project=chromium \
             --grep "@smoke" \
@@ -468,19 +293,7 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
-      - name: Upload PROD Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: prod-smoke-test-results
-          path: test-results/
-          retention-days: 7
 
-
-  # =========================================================
-  # STEP 10 - PIPELINE SUMMARY
-  # Always runs
-  # =========================================================
   summary:
     name: Pipeline Summary
 
@@ -496,32 +309,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Pipeline Results
         run: |
           echo "=============================================="
           echo "       ORANGEHRM PIPELINE SUMMARY"
           echo "=============================================="
-
-          echo "Selected Environment:"
-          echo "${{ github.event.inputs.environment }}"
-
-          echo "----------------------------------------------"
-
-          echo "Prepare Pipeline:"
-          echo "${{ needs.prepare.result }}"
-
-          echo "DEV Sanity:"
-          echo "${{ needs.sanity-dev.result }}"
-
-          echo "QA Regression:"
-          echo "${{ needs.regression-qa.result }}"
-
-          echo "STAGE Sanity:"
-          echo "${{ needs.sanity-stage.result }}"
-
-          echo "PROD Smoke:"
-          echo "${{ needs.smoke-prod.result }}"
-
+          echo "Selected Environment: ${{ github.event.inputs.environment }}"
+          echo "Prepare:       ${{ needs.prepare.result }}"
+          echo "DEV Sanity:    ${{ needs.sanity-dev.result }}"
+          echo "QA Regression: ${{ needs.regression-qa.result }}"
+          echo "STAGE Sanity:  ${{ needs.sanity-stage.result }}"
+          echo "PROD Smoke:    ${{ needs.smoke-prod.result }}"
           echo "=============================================="
-          echo "skipped = environment not included in this run"
