@@ -1,0 +1,5 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"","5324","@smoke @sanity @regression user should login successfully with valid credentials","chromium","2026-10-01","passed","2026-10-01","","","",""
+"","2910","@smoke Login button should be enabled","chromium","2026-10-01","passed","2026-10-01","","","",""
+"","2450","@smoke OrangeHRM login page should be displayed","chromium","2026-10-01","passed","2026-10-01","","","",""
+"","2888","@smoke OrangeHRM logo should be displayed","chromium","2026-10-01","passed","2026-10-01","","","",""
