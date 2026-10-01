@@ -441,6 +441,14 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
 
+    env:
+      EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+      EMAIL_TO: ${{ secrets.EMAIL_TO }}
+      SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
     steps:
       - name: Set Pipeline Status
         id: status
@@ -590,21 +598,21 @@ jobs:
           DASHBOARD
 
       - name: Send Email Notification
-        if: ${{ secrets.EMAIL_USERNAME != '' && secrets.EMAIL_PASSWORD != '' && secrets.EMAIL_TO != '' && secrets.SMTP_SERVER != '' }}
+        if: env.EMAIL_USERNAME != '' && env.EMAIL_PASSWORD != '' && env.EMAIL_TO != '' && env.SMTP_SERVER != ''
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: ${{ secrets.SMTP_SERVER }}
-          server_port: ${{ secrets.SMTP_PORT || '465' }}
+          server_address: ${{ env.SMTP_SERVER }}
+          server_port: ${{ env.SMTP_PORT }}
           secure: true
-          username: ${{ secrets.EMAIL_USERNAME }}
-          password: ${{ secrets.EMAIL_PASSWORD }}
+          username: ${{ env.EMAIL_USERNAME }}
+          password: ${{ env.EMAIL_PASSWORD }}
           subject: "OrangeHRM CI/CD [${{ github.event.inputs.environment }}] - ${{ steps.status.outputs.overall }}"
-          to: "${{ secrets.EMAIL_TO }},${{ secrets.EMAIL_USERNAME }}"
-          from: "OrangeHRM CI Bot <${{ secrets.EMAIL_USERNAME }}>"
+          to: "${{ env.EMAIL_TO }},${{ env.EMAIL_USERNAME }}"
+          from: "OrangeHRM CI Bot <${{ env.EMAIL_USERNAME }}>"
           html_body: file://dashboard.html
 
       - name: Send Slack Notification
-        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}
+        if: env.SLACK_WEBHOOK_URL != ''
         uses: 8398a7/action-slack@v3
         with:
           status: custom
@@ -651,7 +659,7 @@ jobs:
               ]
             }
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK_URL }}
 
       - name: Pipeline Summary
         run: |
