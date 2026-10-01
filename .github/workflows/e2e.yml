@@ -1,12 +1,12 @@
-name: OrangeHRM Enhanced E2E CI/CD Pipeline
+name: OrangeHRM Enhanced CI/CD Pipeline
 
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Run pipeline up to environment'
+        description: Run pipeline up to environment
         required: true
-        default: 'QA'
+        default: QA
         type: choice
         options:
           - Dev
@@ -18,38 +18,56 @@ permissions:
   contents: write
 
 jobs:
+
+  # =========================================================
+  # STEP 1 - PREPARE
+  # =========================================================
   prepare:
     name: Prepare Pipeline
     runs-on: ubuntu-latest
+
     steps:
-      - name: Pipeline metadata
+      - name: Show pipeline information
         run: |
           echo "=========================================="
-          echo "       ORANGEHRM E2E CI/CD PIPELINE"
+          echo "       ORANGEHRM ENHANCED PIPELINE"
           echo "=========================================="
           echo "Selected Environment: ${{ github.event.inputs.environment }}"
           echo "Run ID: ${{ github.run_id }}"
           echo "Branch: ${{ github.ref_name }}"
           echo "Triggered By: ${{ github.actor }}"
+          echo "=========================================="
 
+
+  # =========================================================
+  # STEP 2 - DEPLOY DEV
+  # =========================================================
   deploy-dev:
     name: Deploy to DEV
     needs: prepare
     runs-on: ubuntu-latest
+
     steps:
       - name: Deploy application to DEV
-        run: echo "OrangeHRM deployed to DEV successfully"
+        run: |
+          echo "Deploying OrangeHRM to DEV"
+          echo "DEV deployment completed"
 
+
+  # =========================================================
+  # STEP 3 - DEV SANITY TESTS
+  # =========================================================
   sanity-dev:
     name: DEV - Sanity Tests
     needs: deploy-dev
     runs-on: ubuntu-latest
-    environment: Dev
+
     env:
       ENV: dev
       ORANGE_BASE_URL: ${{ secrets.ORANGE_BASE_URL }}
       ORANGE_USERNAME: ${{ secrets.ORANGE_USERNAME }}
       ORANGE_PASSWORD: ${{ secrets.ORANGE_PASSWORD }}
+
     steps:
       - name: Checkout OrangeHRM repository
         uses: actions/checkout@v4
@@ -84,7 +102,6 @@ jobs:
           [ -n "$ORANGE_BASE_URL" ] || { echo "ERROR: ORANGE_BASE_URL secret is missing"; exit 1; }
           [ -n "$ORANGE_USERNAME" ] || { echo "ERROR: ORANGE_USERNAME secret is missing"; exit 1; }
           [ -n "$ORANGE_PASSWORD" ] || { echo "ERROR: ORANGE_PASSWORD secret is missing"; exit 1; }
-          echo "DEV secrets are available"
 
       - name: Run DEV Sanity Tests
         run: npx playwright test --project=chromium --grep "@sanity" --workers=1
@@ -100,21 +117,12 @@ jobs:
             echo "No allure-results found. Skipping Allure generation."
           fi
 
-      - name: Upload DEV Playwright HTML Report
+      - name: Upload DEV Playwright Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dev-sanity-playwright-report
           path: playwright-report/
-          if-no-files-found: ignore
-          retention-days: 30
-
-      - name: Upload DEV Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dev-sanity-test-results
-          path: test-results/
           if-no-files-found: ignore
           retention-days: 30
 
@@ -127,35 +135,36 @@ jobs:
           if-no-files-found: ignore
           retention-days: 30
 
-      - name: Upload DEV ReportingLabs Report if present
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dev-sanity-reportinglabs-report
-          path: reporting-labs/
-          if-no-files-found: ignore
-          retention-days: 30
 
+  # =========================================================
+  # STEP 4 - DEPLOY QA
+  # =========================================================
   deploy-qa:
     name: Deploy to QA
     needs: sanity-dev
     if: contains(fromJSON('["QA","Stage","Prod"]'), github.event.inputs.environment)
     runs-on: ubuntu-latest
+
     steps:
       - name: Deploy application to QA
-        run: echo "OrangeHRM deployed to QA successfully"
+        run: echo "QA deployment completed"
 
+
+  # =========================================================
+  # STEP 5 - QA REGRESSION TESTS
+  # =========================================================
   regression-qa:
     name: QA - Regression Tests
     needs: deploy-qa
     if: contains(fromJSON('["QA","Stage","Prod"]'), github.event.inputs.environment)
     runs-on: ubuntu-latest
-    environment: QA
+
     env:
       ENV: qa
       ORANGE_BASE_URL: ${{ secrets.ORANGE_BASE_URL }}
       ORANGE_USERNAME: ${{ secrets.ORANGE_USERNAME }}
       ORANGE_PASSWORD: ${{ secrets.ORANGE_PASSWORD }}
+
     steps:
       - name: Checkout OrangeHRM repository
         uses: actions/checkout@v4
@@ -190,7 +199,6 @@ jobs:
           [ -n "$ORANGE_BASE_URL" ] || { echo "ERROR: ORANGE_BASE_URL secret is missing"; exit 1; }
           [ -n "$ORANGE_USERNAME" ] || { echo "ERROR: ORANGE_USERNAME secret is missing"; exit 1; }
           [ -n "$ORANGE_PASSWORD" ] || { echo "ERROR: ORANGE_PASSWORD secret is missing"; exit 1; }
-          echo "QA secrets are available"
 
       - name: Run QA Regression Tests
         run: npx playwright test --project=chromium --grep "@regression" --workers=1
@@ -206,21 +214,12 @@ jobs:
             echo "No allure-results found. Skipping Allure generation."
           fi
 
-      - name: Upload QA Playwright HTML Report
+      - name: Upload QA Playwright Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: qa-regression-playwright-report
           path: playwright-report/
-          if-no-files-found: ignore
-          retention-days: 30
-
-      - name: Upload QA Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: qa-regression-test-results
-          path: test-results/
           if-no-files-found: ignore
           retention-days: 30
 
@@ -233,35 +232,36 @@ jobs:
           if-no-files-found: ignore
           retention-days: 30
 
-      - name: Upload QA ReportingLabs Report if present
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: qa-regression-reportinglabs-report
-          path: reporting-labs/
-          if-no-files-found: ignore
-          retention-days: 30
 
+  # =========================================================
+  # STEP 6 - DEPLOY STAGE
+  # =========================================================
   deploy-stage:
     name: Deploy to STAGE
     needs: regression-qa
     if: contains(fromJSON('["Stage","Prod"]'), github.event.inputs.environment)
     runs-on: ubuntu-latest
+
     steps:
       - name: Deploy application to STAGE
-        run: echo "OrangeHRM deployed to STAGE successfully"
+        run: echo "STAGE deployment completed"
 
+
+  # =========================================================
+  # STEP 7 - STAGE SANITY TESTS
+  # =========================================================
   sanity-stage:
     name: STAGE - Sanity Tests
     needs: deploy-stage
     if: contains(fromJSON('["Stage","Prod"]'), github.event.inputs.environment)
     runs-on: ubuntu-latest
-    environment: Stage
+
     env:
       ENV: stage
       ORANGE_BASE_URL: ${{ secrets.ORANGE_BASE_URL }}
       ORANGE_USERNAME: ${{ secrets.ORANGE_USERNAME }}
       ORANGE_PASSWORD: ${{ secrets.ORANGE_PASSWORD }}
+
     steps:
       - name: Checkout OrangeHRM repository
         uses: actions/checkout@v4
@@ -296,7 +296,6 @@ jobs:
           [ -n "$ORANGE_BASE_URL" ] || { echo "ERROR: ORANGE_BASE_URL secret is missing"; exit 1; }
           [ -n "$ORANGE_USERNAME" ] || { echo "ERROR: ORANGE_USERNAME secret is missing"; exit 1; }
           [ -n "$ORANGE_PASSWORD" ] || { echo "ERROR: ORANGE_PASSWORD secret is missing"; exit 1; }
-          echo "STAGE secrets are available"
 
       - name: Run STAGE Sanity Tests
         run: npx playwright test --project=chromium --grep "@sanity" --workers=1
@@ -312,21 +311,12 @@ jobs:
             echo "No allure-results found. Skipping Allure generation."
           fi
 
-      - name: Upload STAGE Playwright HTML Report
+      - name: Upload STAGE Playwright Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: stage-sanity-playwright-report
           path: playwright-report/
-          if-no-files-found: ignore
-          retention-days: 30
-
-      - name: Upload STAGE Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: stage-sanity-test-results
-          path: test-results/
           if-no-files-found: ignore
           retention-days: 30
 
@@ -339,35 +329,36 @@ jobs:
           if-no-files-found: ignore
           retention-days: 30
 
-      - name: Upload STAGE ReportingLabs Report if present
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: stage-sanity-reportinglabs-report
-          path: reporting-labs/
-          if-no-files-found: ignore
-          retention-days: 30
 
+  # =========================================================
+  # STEP 8 - DEPLOY PROD
+  # =========================================================
   deploy-prod:
     name: Deploy to PROD
     needs: sanity-stage
     if: github.event.inputs.environment == 'Prod'
     runs-on: ubuntu-latest
+
     steps:
       - name: Deploy application to PROD
-        run: echo "OrangeHRM deployed to PROD successfully"
+        run: echo "PROD deployment completed"
 
+
+  # =========================================================
+  # STEP 9 - PROD SMOKE TESTS
+  # =========================================================
   smoke-prod:
     name: PROD - Smoke Tests
     needs: deploy-prod
     if: github.event.inputs.environment == 'Prod'
     runs-on: ubuntu-latest
-    environment: Prod
+
     env:
       ENV: prod
       ORANGE_BASE_URL: ${{ secrets.ORANGE_BASE_URL }}
       ORANGE_USERNAME: ${{ secrets.ORANGE_USERNAME }}
       ORANGE_PASSWORD: ${{ secrets.ORANGE_PASSWORD }}
+
     steps:
       - name: Checkout OrangeHRM repository
         uses: actions/checkout@v4
@@ -402,7 +393,6 @@ jobs:
           [ -n "$ORANGE_BASE_URL" ] || { echo "ERROR: ORANGE_BASE_URL secret is missing"; exit 1; }
           [ -n "$ORANGE_USERNAME" ] || { echo "ERROR: ORANGE_USERNAME secret is missing"; exit 1; }
           [ -n "$ORANGE_PASSWORD" ] || { echo "ERROR: ORANGE_PASSWORD secret is missing"; exit 1; }
-          echo "PROD secrets are available"
 
       - name: Run PROD Smoke Tests
         run: npx playwright test --project=chromium --grep "@smoke" --workers=1
@@ -418,21 +408,12 @@ jobs:
             echo "No allure-results found. Skipping Allure generation."
           fi
 
-      - name: Upload PROD Playwright HTML Report
+      - name: Upload PROD Playwright Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: prod-smoke-playwright-report
           path: playwright-report/
-          if-no-files-found: ignore
-          retention-days: 30
-
-      - name: Upload PROD Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: prod-smoke-test-results
-          path: test-results/
           if-no-files-found: ignore
           retention-days: 30
 
@@ -445,53 +426,51 @@ jobs:
           if-no-files-found: ignore
           retention-days: 30
 
-      - name: Upload PROD ReportingLabs Report if present
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: prod-smoke-reportinglabs-report
-          path: reporting-labs/
-          if-no-files-found: ignore
-          retention-days: 30
 
+  # =========================================================
+  # STEP 10 - PUBLISH REPORTS + NOTIFICATIONS
+  # =========================================================
   notify:
     name: Publish Reports + Notify
-    needs: [prepare, sanity-dev, regression-qa, sanity-stage, smoke-prod]
+    needs:
+      - prepare
+      - sanity-dev
+      - regression-qa
+      - sanity-stage
+      - smoke-prod
     if: always()
     runs-on: ubuntu-latest
-    env:
-      EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
-      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-      EMAIL_TO: ${{ secrets.EMAIL_TO }}
-      SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
-      SMTP_PORT: ${{ secrets.SMTP_PORT }}
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
     steps:
       - name: Set Pipeline Status
         id: status
         shell: bash
         run: |
-          PREPARE="${{ needs.prepare.result }}"
           DEV="${{ needs.sanity-dev.result }}"
           QA="${{ needs.regression-qa.result }}"
           STAGE="${{ needs.sanity-stage.result }}"
           PROD="${{ needs.smoke-prod.result }}"
 
           get_emoji() {
-            if [ "$1" = "success" ]; then echo "✅";
-            elif [ "$1" = "skipped" ]; then echo "⏭️";
-            else echo "❌"; fi
+            if [ "$1" = "success" ]; then
+              echo "✅"
+            elif [ "$1" = "skipped" ]; then
+              echo "⏭️"
+            else
+              echo "❌"
+            fi
           }
 
-          echo "prepare=$(get_emoji "$PREPARE")" >> "$GITHUB_OUTPUT"
           echo "dev=$(get_emoji "$DEV")" >> "$GITHUB_OUTPUT"
           echo "qa=$(get_emoji "$QA")" >> "$GITHUB_OUTPUT"
           echo "stage=$(get_emoji "$STAGE")" >> "$GITHUB_OUTPUT"
           echo "prod=$(get_emoji "$PROD")" >> "$GITHUB_OUTPUT"
 
           FAILED=false
-          for result in "$PREPARE" "$DEV" "$QA" "$STAGE" "$PROD"; do
-            if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then FAILED=true; fi
+          for result in "$DEV" "$QA" "$STAGE" "$PROD"; do
+            if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
+              FAILED=true
+            fi
           done
 
           if [ "$FAILED" = "true" ]; then
@@ -500,8 +479,8 @@ jobs:
             echo "overall=✅ ALL PASSED" >> "$GITHUB_OUTPUT"
           fi
 
-          REPORT_BASE="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/runs/${{ github.run_id }}"
-          echo "report_url=$REPORT_BASE" >> "$GITHUB_OUTPUT"
+          REPORT_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/runs/${{ github.run_id }}"
+          echo "report_url=$REPORT_URL" >> "$GITHUB_OUTPUT"
 
       - name: Download All Reports
         uses: actions/download-artifact@v4
@@ -520,24 +499,41 @@ jobs:
             <meta charset="UTF-8">
             <title>OrangeHRM Pipeline Reports</title>
             <style>
-              body { font-family: Arial, sans-serif; margin: 0; padding: 40px; background: #f5f5f5; }
-              .container { max-width: 900px; margin: 0 auto; }
-              h1 { color: #1a1a2e; }
-              .meta { color: #666; margin-bottom: 24px; }
-              .card { background: white; border-radius: 12px; padding: 24px; margin: 16px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-              .btn { display: inline-block; padding: 10px 18px; border-radius: 8px; text-decoration: none; color: white; background: #1a1a2e; margin: 4px; }
-              .allure { background: #28a745; }
-              .rlabs { background: #6f42c1; }
+              body { font-family: Arial,sans-serif; padding: 40px; background:#f5f5f5; }
+              .container { max-width:900px; margin:auto; }
+              .card { background:white; padding:24px; margin:16px 0; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,.1); }
+              .btn { display:inline-block; padding:10px 18px; margin:4px; background:#1a1a2e; color:white; text-decoration:none; border-radius:8px; }
+              .allure { background:#28a745; }
             </style>
           </head>
           <body>
             <div class="container">
               <h1>OrangeHRM Playwright CI/CD Reports</h1>
-              <p class="meta">Environment: ENV_SELECTED | Run: RUN_ID | Branch: BRANCH</p>
-              <div class="card"><h2>DEV - Sanity</h2><a class="btn" href="dev-html/index.html">Playwright HTML</a><a class="btn allure" href="dev-allure/index.html">Allure</a><a class="btn rlabs" href="dev-rlabs/index.html">ReportingLabs</a></div>
-              <div class="card"><h2>QA - Regression</h2><a class="btn" href="qa-html/index.html">Playwright HTML</a><a class="btn allure" href="qa-allure/index.html">Allure</a><a class="btn rlabs" href="qa-rlabs/index.html">ReportingLabs</a></div>
-              <div class="card"><h2>STAGE - Sanity</h2><a class="btn" href="stage-html/index.html">Playwright HTML</a><a class="btn allure" href="stage-allure/index.html">Allure</a><a class="btn rlabs" href="stage-rlabs/index.html">ReportingLabs</a></div>
-              <div class="card"><h2>PROD - Smoke</h2><a class="btn" href="prod-html/index.html">Playwright HTML</a><a class="btn allure" href="prod-allure/index.html">Allure</a><a class="btn rlabs" href="prod-rlabs/index.html">ReportingLabs</a></div>
+              <p>Environment: ENV_SELECTED | Run: RUN_ID | Branch: BRANCH</p>
+
+              <div class="card">
+                <h2>DEV - Sanity</h2>
+                <a class="btn" href="dev-html/index.html">Playwright HTML</a>
+                <a class="btn allure" href="dev-allure/index.html">Allure</a>
+              </div>
+
+              <div class="card">
+                <h2>QA - Regression</h2>
+                <a class="btn" href="qa-html/index.html">Playwright HTML</a>
+                <a class="btn allure" href="qa-allure/index.html">Allure</a>
+              </div>
+
+              <div class="card">
+                <h2>STAGE - Sanity</h2>
+                <a class="btn" href="stage-html/index.html">Playwright HTML</a>
+                <a class="btn allure" href="stage-allure/index.html">Allure</a>
+              </div>
+
+              <div class="card">
+                <h2>PROD - Smoke</h2>
+                <a class="btn" href="prod-html/index.html">Playwright HTML</a>
+                <a class="btn allure" href="prod-allure/index.html">Allure</a>
+              </div>
             </div>
           </body>
           </html>
@@ -549,16 +545,12 @@ jobs:
 
           cp -r all-reports/dev-sanity-playwright-report/ pages-deploy/runs/${{ github.run_id }}/dev-html/ 2>/dev/null || true
           cp -r all-reports/dev-sanity-allure-report/ pages-deploy/runs/${{ github.run_id }}/dev-allure/ 2>/dev/null || true
-          cp -r all-reports/dev-sanity-reportinglabs-report/ pages-deploy/runs/${{ github.run_id }}/dev-rlabs/ 2>/dev/null || true
           cp -r all-reports/qa-regression-playwright-report/ pages-deploy/runs/${{ github.run_id }}/qa-html/ 2>/dev/null || true
           cp -r all-reports/qa-regression-allure-report/ pages-deploy/runs/${{ github.run_id }}/qa-allure/ 2>/dev/null || true
-          cp -r all-reports/qa-regression-reportinglabs-report/ pages-deploy/runs/${{ github.run_id }}/qa-rlabs/ 2>/dev/null || true
           cp -r all-reports/stage-sanity-playwright-report/ pages-deploy/runs/${{ github.run_id }}/stage-html/ 2>/dev/null || true
           cp -r all-reports/stage-sanity-allure-report/ pages-deploy/runs/${{ github.run_id }}/stage-allure/ 2>/dev/null || true
-          cp -r all-reports/stage-sanity-reportinglabs-report/ pages-deploy/runs/${{ github.run_id }}/stage-rlabs/ 2>/dev/null || true
           cp -r all-reports/prod-smoke-playwright-report/ pages-deploy/runs/${{ github.run_id }}/prod-html/ 2>/dev/null || true
           cp -r all-reports/prod-smoke-allure-report/ pages-deploy/runs/${{ github.run_id }}/prod-allure/ 2>/dev/null || true
-          cp -r all-reports/prod-smoke-reportinglabs-report/ pages-deploy/runs/${{ github.run_id }}/prod-rlabs/ 2>/dev/null || true
 
       - name: Deploy Reports to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
@@ -571,6 +563,7 @@ jobs:
         shell: bash
         run: |
           REPORT_URL="${{ steps.status.outputs.report_url }}"
+
           cat > dashboard.html << DASHBOARD
           <!DOCTYPE html>
           <html>
@@ -581,35 +574,37 @@ jobs:
               <p><strong>Branch:</strong> ${{ github.ref_name }}</p>
               <p><strong>Triggered By:</strong> ${{ github.actor }}</p>
               <p><strong>Overall:</strong> ${{ steps.status.outputs.overall }}</p>
+
               <table style="width:100%;border-collapse:collapse">
-                <tr><th align="left">Stage</th><th align="left">Suite</th><th>Status</th></tr>
+                <tr><th>Stage</th><th>Suite</th><th>Status</th></tr>
                 <tr><td>DEV</td><td>Sanity</td><td>${{ steps.status.outputs.dev }}</td></tr>
                 <tr><td>QA</td><td>Regression</td><td>${{ steps.status.outputs.qa }}</td></tr>
                 <tr><td>STAGE</td><td>Sanity</td><td>${{ steps.status.outputs.stage }}</td></tr>
                 <tr><td>PROD</td><td>Smoke</td><td>${{ steps.status.outputs.prod }}</td></tr>
               </table>
-              <p style="margin-top:24px"><a href="${REPORT_URL}/index.html">View All Reports</a></p>
+
+              <p><a href="${REPORT_URL}/index.html">View All Reports</a></p>
             </div>
           </body>
           </html>
           DASHBOARD
 
       - name: Send Email Notification
-        if: env.EMAIL_USERNAME != '' && env.EMAIL_PASSWORD != '' && env.EMAIL_TO != '' && env.SMTP_SERVER != ''
+        if: ${{ secrets.EMAIL_USERNAME != '' && secrets.EMAIL_PASSWORD != '' && secrets.EMAIL_TO != '' && secrets.SMTP_SERVER != '' }}
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: ${{ env.SMTP_SERVER }}
-          server_port: ${{ env.SMTP_PORT }}
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT || '465' }}
           secure: true
-          username: ${{ env.EMAIL_USERNAME }}
-          password: ${{ env.EMAIL_PASSWORD }}
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "OrangeHRM CI/CD [${{ github.event.inputs.environment }}] - ${{ steps.status.outputs.overall }}"
-          to: ${{ env.EMAIL_TO }}
-          from: "OrangeHRM CI Bot <${{ env.EMAIL_USERNAME }}>"
+          to: "${{ secrets.EMAIL_TO }},${{ secrets.EMAIL_USERNAME }}"
+          from: "OrangeHRM CI Bot <${{ secrets.EMAIL_USERNAME }}>"
           html_body: file://dashboard.html
 
       - name: Send Slack Notification
-        if: env.SLACK_WEBHOOK_URL != ''
+        if: ${{ secrets.SLACK_WEBHOOK_URL != '' }}
         uses: 8398a7/action-slack@v3
         with:
           status: custom
@@ -619,27 +614,44 @@ jobs:
               "blocks": [
                 {
                   "type": "header",
-                  "text": { "type": "plain_text", "text": "OrangeHRM Playwright CI/CD" }
+                  "text": {
+                    "type": "plain_text",
+                    "text": "OrangeHRM Playwright CI/CD"
+                  }
                 },
                 {
                   "type": "section",
-                  "text": { "type": "mrkdwn", "text": "*Overall:* ${{ steps.status.outputs.overall }}\n*Run up to:* `${{ github.event.inputs.environment }}`\n*Branch:* `${{ github.ref_name }}`\n*Triggered by:* `${{ github.actor }}`" }
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Overall:* ${{ steps.status.outputs.overall }}\n*Environment:* `${{ github.event.inputs.environment }}`\n*Branch:* `${{ github.ref_name }}`\n*Triggered by:* `${{ github.actor }}`"
+                  }
                 },
                 {
                   "type": "section",
-                  "text": { "type": "mrkdwn", "text": "${{ steps.status.outputs.dev }} *DEV* - Sanity\n${{ steps.status.outputs.qa }} *QA* - Regression\n${{ steps.status.outputs.stage }} *STAGE* - Sanity\n${{ steps.status.outputs.prod }} *PROD* - Smoke" }
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ steps.status.outputs.dev }} *DEV* - Sanity\n${{ steps.status.outputs.qa }} *QA* - Regression\n${{ steps.status.outputs.stage }} *STAGE* - Sanity\n${{ steps.status.outputs.prod }} *PROD* - Smoke"
+                  }
                 },
                 {
                   "type": "actions",
                   "elements": [
-                    { "type": "button", "text": { "type": "plain_text", "text": "View Reports" }, "url": "${{ steps.status.outputs.report_url }}/index.html" },
-                    { "type": "button", "text": { "type": "plain_text", "text": "GitHub Actions" }, "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" }
+                    {
+                      "type": "button",
+                      "text": { "type": "plain_text", "text": "View Reports" },
+                      "url": "${{ steps.status.outputs.report_url }}/index.html"
+                    },
+                    {
+                      "type": "button",
+                      "text": { "type": "plain_text", "text": "GitHub Actions" },
+                      "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
                   ]
                 }
               ]
             }
         env:
-          SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
       - name: Pipeline Summary
         run: |
