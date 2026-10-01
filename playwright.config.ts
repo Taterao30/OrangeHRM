@@ -22,6 +22,12 @@ export default defineConfig({
 
   testDir: './tests',
 
+  timeout: 60000,
+
+  expect: {
+    timeout: 10000
+  },
+
   fullyParallel: false,
 
   forbidOnly: !!process.env.CI,
@@ -32,11 +38,23 @@ export default defineConfig({
 
   reporter: [
     ['html', { open: 'never' }],
-    ['list']
+    ['list'],
+    [
+      'allure-playwright',
+      {
+        outputFolder: 'allure-results',
+        detail: true,
+        suiteTitle: false
+      }
+    ]
   ],
 
   use: {
     baseURL: process.env.ORANGE_BASE_URL,
+
+    actionTimeout: 15000,
+
+    navigationTimeout: 60000,
 
     trace: 'on-first-retry',
 
