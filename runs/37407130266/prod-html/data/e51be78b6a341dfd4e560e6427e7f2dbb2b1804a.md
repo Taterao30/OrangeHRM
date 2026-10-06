@@ -1,0 +1,80 @@
+# Instructions
+
+- Following Playwright test failed.
+- Explain why, be concise, respect Playwright best practices.
+- Provide a snippet of code with the fix, if possible.
+
+# Test info
+
+- Name: loginpage.spec.ts >> @smoke OrangeHRM login page should be displayed
+- Location: tests/loginpage.spec.ts:7:5
+
+# Error details
+
+```
+Test timeout of 60000ms exceeded while running "beforeEach" hook.
+```
+
+```
+TimeoutError: page.goto: Timeout 60000ms exceeded.
+Call log:
+  - navigating to "https://opensource-demo.orangehrmlive.com/web/index.php/auth/login", waiting until "load"
+
+```
+
+# Test source
+
+```ts
+  1  | import { Locator, Page } from '@playwright/test';
+  2  | 
+  3  | export class LoginPage {
+  4  | 
+  5  |   readonly page: Page;
+  6  | 
+  7  |   readonly username: Locator;
+  8  |   readonly password: Locator;
+  9  |   readonly loginButton: Locator;
+  10 |   readonly orangeHRMLogo: Locator;
+  11 |   readonly invalidCredentialsMessage: Locator;
+  12 |   readonly requiredMessage: Locator;
+  13 | 
+  14 |   constructor(page: Page) {
+  15 | 
+  16 |     this.page = page;
+  17 | 
+  18 |     // Stable locators - not dependent on English/Spanish text
+  19 |     this.username = page.locator('input[name="username"]');
+  20 | 
+  21 |     this.password = page.locator('input[name="password"]');
+  22 | 
+  23 |     this.loginButton = page.locator('button[type="submit"]');
+  24 | 
+  25 |     this.orangeHRMLogo = page.locator('.orangehrm-login-branding img');
+  26 | 
+  27 |     // Messages can vary by language, so use broader locators
+  28 |     this.invalidCredentialsMessage =
+  29 |       page.locator('.oxd-alert-content-text');
+  30 | 
+  31 |     this.requiredMessage =
+  32 |       page.locator('.oxd-input-field-error-message');
+  33 |   }
+  34 | 
+  35 |   async goToLoginPage(): Promise<void> {
+  36 | 
+> 37 |     await this.page.goto('/web/index.php/auth/login');
+     |                     ^ TimeoutError: page.goto: Timeout 60000ms exceeded.
+  38 |   }
+  39 | 
+  40 |   async doLogin(
+  41 |     username: string,
+  42 |     password: string
+  43 |   ): Promise<void> {
+  44 | 
+  45 |     await this.username.fill(username);
+  46 | 
+  47 |     await this.password.fill(password);
+  48 | 
+  49 |     await this.loginButton.click();
+  50 |   }
+  51 | }
+```
