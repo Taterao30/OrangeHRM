@@ -1,4 +1,4 @@
 "DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
-"","3057","@smoke @sanity @regression user should login successfully with valid credentials","chromium","2026-10-06","passed","2026-10-06","","","",""
-"","2391","@sanity Username field should be displayed","chromium","2026-10-06","passed","2026-10-06","","","",""
-"","2082","@sanity Password field should be displayed","chromium","2026-10-06","passed","2026-10-06","","","",""
+"","3272","@sanity Username field should be displayed","chromium","2026-10-06","passed","2026-10-06","","","",""
+"","3929","@smoke @sanity @regression user should login successfully with valid credentials","chromium","2026-10-06","passed","2026-10-06","","","",""
+"","5425","@sanity Password field should be displayed","chromium","2026-10-06","passed","2026-10-06","","","",""
