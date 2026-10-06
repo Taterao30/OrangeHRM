@@ -16,7 +16,9 @@ if (!process.env.CI) {
 }
 
 console.log(`Running tests on environment: ${ENV}`);
-console.log(`Base URL: ${process.env.ORANGE_BASE_URL}`);
+console.log(
+  `Base URL configured: ${process.env.ORANGE_BASE_URL ? 'YES' : 'NO'}`
+);
 
 export default defineConfig({
 
@@ -37,8 +39,16 @@ export default defineConfig({
   workers: 1,
 
   reporter: [
-    ['html', { open: 'never' }],
+    [
+      'html',
+      {
+        outputFolder: 'playwright-report',
+        open: 'never'
+      }
+    ],
+
     ['list'],
+
     [
       'allure-playwright',
       {
@@ -50,6 +60,7 @@ export default defineConfig({
   ],
 
   use: {
+
     baseURL: process.env.ORANGE_BASE_URL,
 
     actionTimeout: 15000,
@@ -66,6 +77,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+
       use: {
         ...devices['Desktop Chrome']
       }
