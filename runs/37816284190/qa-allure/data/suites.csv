@@ -1,0 +1,6 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"","2684","@regression Required message should display for blank username","chromium","2026-10-08","passed","2026-10-08","","","",""
+"","3415","@regression login should fail with invalid username","chromium","2026-10-08","passed","2026-10-08","","","",""
+"","2970","@regression Required message should display for blank password","chromium","2026-10-08","passed","2026-10-08","","","",""
+"","4135","@smoke @sanity @regression user should login successfully with valid credentials","chromium","2026-10-08","passed","2026-10-08","","","",""
+"","3698","@regression login should fail with invalid password","chromium","2026-10-08","passed","2026-10-08","","","",""
